@@ -1,0 +1,117 @@
+/*********************************/
+/*         Datepicker           */
+/*===============================*/
+
+.dp__input {
+  .dp__input_icon_pad {
+    @apply bg-white dark:bg-slate-900 border-0 rounded-none;
+  }
+}
+
+.dp__theme_light,
+.dp__overlay_container {
+  @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded border border-gray-100 dark:border-gray-800 hover:border-gray-100 hover:dark:border-gray-800 #{!important};
+}
+
+.dp__arrow_bottom,
+.dp__arrow_top {
+  @apply bg-white dark:bg-slate-900 border-gray-100 dark:border-gray-800;
+}
+
+.dp__cell_inner,
+.dp__btn,
+.dp--time-overlay-btn,
+.dp--time-invalid,
+.dp--qr-btn,
+.dp__calendar_header_item,
+.dp__inner_nav {
+  @apply text-slate-900 dark:text-white;
+}
+
+.dp__date_hover_end:hover,
+.dp__date_hover_start:hover,
+.dp__date_hover:hover,
+.dp__overlay_cell:hover,
+.dp__button,
+.dp--year-select:hover,
+.dp__month_year_select:hover,
+.dp__inner_nav:hover,
+.dp__input .dp__input_icon_pad {
+  @apply bg-indigo-600  rounded-full text-white #{!important};
+}
+
+.dp__range_end,
+.dp__range_start,
+.dp__active_date {
+  @apply bg-indigo-600 rounded-full text-white #{!important};
+}
+
+.dp__today,
+.dp__overlay_cell_active {
+  @apply rounded-full text-center items-center border-indigo-600 text-white bg-indigo-600 #{!important};
+}
+
+.dp__calendar_header_separator {
+  @apply border border-gray-100  dark:border-gray-800;
+}
+
+.dp__action_buttons .dp__action_select,
+.dp__action_buttons .dp__action_select:hover {
+  @apply bg-indigo-600  text-white font-medium rounded-md #{!important};
+}
+
+.dp__action_cancel {
+  @apply bg-indigo-600/10 hover:bg-red-600 text-indigo-600 hover:text-white border border-indigo-600/10 hover:border-red-600 font-medium rounded-md #{!important};
+}
+
+.dp__input.dp__input_icon_pad {
+  @apply dark:text-white form-input lg:rounded-t-sm lg:rounded-e-none lg:rounded-b-none lg:rounded-s-sm lg:outline-0 w-full filter-input-box bg-gray-50 dark:bg-slate-800 border-0 focus:ring-0;
+}
+.registration-form .dp__input.dp__input_icon_pad {
+  @apply rounded-none;
+}
+
+.date2 {
+  .dp__input {
+    &.dp__input_icon_pad {
+      @apply bg-white dark:bg-slate-900  rounded h-10 border border-gray-200 focus:border-indigo-600 dark:border-gray-800 dark:focus:border-indigo-600 focus:ring-0;
+    }
+  }
+}
+
+.vs--searchable .vs__dropdown-toggle {
+  @apply filter-search-form form-select relative flex h-[60px] w-full bg-gray-50 dark:bg-slate-800 border-0 focus:ring-0 outline-none text-slate-400 p-0 -ms-1;
+}
+.form-select {
+  @apply cursor-pointer;
+}
+
+.vs__clear {
+  @apply hidden;
+}
+.vs__selected {
+  @apply bg-cyan-600 text-white h-5
+  dark:text-cyan-400;
+}
+
+.vs__open-indicator {
+  @apply hidden;
+}
+
+.vs__dropdown-menu {
+  @apply dark:bg-slate-800;
+}
+
+.vs--single .vs__selected {
+  @apply mb-1 text-gray-500 h-10;
+}
+
+.vs--single .vs__selected {
+  @apply mt-2;
+}
+
+.vs__dropdown-menu {
+  li {
+    @apply dark:text-white;
+  }
+}

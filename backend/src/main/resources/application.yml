@@ -1,0 +1,170 @@
+server:
+  port: 8085
+minio:
+  endpoint: ${MINIO_SERVER_URL:http://localhost:9000}
+  accessKey: ${MINIO_ACCESS_KEY:internship}
+  secretKey: ${MINIO_SECRET_KEY:internship2024}
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost:5432}/${POSTGRES_DB:internship}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:12345678}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  logging:
+    level:
+      org:
+        hibernate:
+          SQL: DEBUG
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      file-size-threshold: 2KB
+  security:
+    oauth2:
+      resource-server:
+        jwt:
+          issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/${KEYCLOAK_REALM:InternshipUCB}
+          jwk-set-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/${KEYCLOAK_REALM:InternshipUCB}/protocol/openid-connect/certs
+keycloak:
+  url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}
+token:
+  converter:
+    principal-attribute: preferred_username
+    resource-id: ${KEYCLOAK_CLIENT_ID:internship_cliente}
+
+environment:
+  frontend_url: ${FRONTEND_URL:http://localhost:5173}
+email:
+  service:
+    url: ${EMAIL_SERVICE_URL:http://localhost:8086}
+
+#Configuraciones de seguridad
+security-constraints:
+  constraints:
+    - auth-roles:
+        - permitAll
+      security-collections:
+        - name: permitAll
+          patterns:
+            - /api/v1/pasantia/carreras
+            - /api/v1/pasantia/areas
+            - /api/v1/inicio/recuento
+            - /api/v1/institucion/sectores
+            - /api/v1/institucion/destacadas
+            - /api/v1/public/files/download/*
+            - /api/v1/estudiante/public/files/download/*
+            - /api/v1/usuario/*/existencia
+            - /error
+            - /v3/api-docs/**
+            - /swagger-ui/**
+            - /swagger-ui.html
+          methods:
+            - GET
+
+    - auth-roles:
+        - authenticated
+      security-collections:
+        - name: authenticated get methods
+          patterns:
+            - /api/v1/pasantia
+            - /api/v1/pasantia/*
+            - /api/v1/pasantia/*/relacionadas
+            - /api/v1/institucion
+            - /api/v1/institucion/*
+            - /api/v1/institucion/*/relacionadas
+            - /api/v1/usuario/*/empresa/aprobado
+          methods:
+            - GET
+          
+
+    - auth-roles:
+        - authenticated
+      security-collections:
+        - name: authenticated post methods
+          patterns:
+            - /api/v1/files/upload
+            - /api/v1/usuario
+            - /api/v1/usuario/*/institucion/*/pasantia/*/noaplicante #Esta ruta deberia requerir rol empresa? o talvez empresa o admin
+            - /api/v1/usuario/persona
+            - /api/v1/usuario/institucion
+          methods:
+            - POST
+
+    - auth-roles:
+        - EMPRESA
+      security-collections:
+        - name: empresa put and get methods
+          patterns:
+            - /api/v1/pasantia/institucion/usuario/*
+            - /api/v1/usuario/*/pasantia/*/finalizar/sin-seleccion
+            - /api/v1/usuario/*/pasantia/*/aplicacion/*/aceptar
+            - /api/v1/usuario/*/instituion/*/pasantia/*
+            - /api/v1/usuario/*/institucion/*
+            - /api/v1/usuario/*/institucion
+            - /api/v1/usuario/*/pasantia/*/detalle
+            - /api/v1/usuario/*/institucion/*/pasantias9
+            - /api/v1/pasantia/carreras
+          methods:
+            - GET
+            - PUT
+
+    - auth-roles:
+        - EMPRESA
+      security-collections:
+        - name: empresa post methods
+          patterns:
+            - /api/v1/usuario/*/institucion/*
+            - /api/v1/usuario/*/institucion
+            - /api/v1/usuario/*/institucion/*/pasantia
+            - /api/v1/usuario/institucion
+          methods:
+            - POST
+
+    - auth-roles:
+        - EMPRESA
+      security-collections:
+        - name: empresa delete methods
+          patterns:
+            - /api/v1/usuario/*/pasantia/*/aplicacion/*/rechazar
+          methods:
+            - DELETE
+
+    - auth-roles:
+        - ADMIN
+      security-collections:
+        - name: admin
+          patterns:
+            - /api/v1/admin/**
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+
+    - auth-roles:
+        - ESTUDIANTE
+      security-collections:
+        - name: estudiante
+          patterns:
+            - /api/v1/estudiante/**
+            - /api/v1/usuario/*/institucion/*/pasantia/*/aplicantes/*
+            - /api/v1/usuario/*/institucion/*/pasantias/*
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+
+
+
+
