@@ -67,9 +67,9 @@ function tokenInterceptor () {
 
 
 const keycloak = new Keycloak({
-    url: authConfig.url,
-    realm: authConfig.realm,
-    clientId: authConfig.clientId,
+    url: import.meta.env.VITE_KEYCLOAK_URL || authConfig.url,
+    realm: import.meta.env.VITE_KEYCLOAK_REALM || authConfig.realm,
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || authConfig.clientId,
 });
 
 keycloak.authenticated = false;
