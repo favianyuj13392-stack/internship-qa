@@ -39,113 +39,115 @@ Para que cada reporte de defecto en MantisBT sea irrefutable y facilite la depur
 
 ## 🪲 ANTONIO YUJRA (Líder): Módulo 1 (Autenticación, Seguridad y Padrón) - 10 Bugs
 
-### BUG-M1-001: Bloqueo total de redirección OAuth2 tras login en Keycloak por buffer de cabeceras insuficiente
-- **Categoría:** Autenticación / Seguridad
-- **Severidad:** **Block** | **Prioridad:** **Immediate**
-- **Precondiciones:** Nginx configurado sin buffer extendido; usuario con múltiples roles y claims institucionales.
-- **Pasos para reproducir:**
-  1. En `http://localhost:5173/`, hacer clic en "Iniciar Sesión".
-  2. Autenticarse exitosamente en Keycloak.
-  3. Observar la respuesta devuelta por el proxy perimetral.
-- **Resultado Actual:** Nginx retorna `502 Bad Gateway` debido a encabezados HTTP superiores a 8 KB generados por el token JWT.
-- **Resultado Esperado:** Redirección transparente a la aplicación con tokens parseados correctamente.
-- **Evidencia en Video:** `BUG-M1-001-Nginx-502-OIDC.mp4` (Grabación de DevTools mostrando cabecera de 12 KB y error 502).
-
-### BUG-M1-002: Bucle infinito de recargas al intentar renovar Access Token con Refresh Token expirado
-- **Categoría:** Frontend / Interceptores Axios
-- **Severidad:** **Crash** | **Prioridad:** **Urgent**
-- **Precondiciones:** Sesión donde tanto Access Token como Refresh Token han expirado.
-- **Pasos para reproducir:**
-  1. Dejar la aplicación abierta durante 1 hora sin interactuar.
-  2. Hacer clic en cualquier pestaña privada (ej. `/perfil/estudiante`).
-- **Resultado Actual:** El interceptor de Axios captura 401, reintenta indefinidamente contra `/token` y provoca recarga continua congelando la pestaña del navegador (100% CPU en hilo de renderizado).
-- **Resultado Esperado:** Detección de Refresh Token inválido, limpieza de LocalStorage y redirección limpia a la pantalla de login con aviso: "Su sesión ha expirado".
-- **Evidencia en Video:** `BUG-M1-002-Infinite-Refresh-Loop.mp4` (Pestaña congelada y spam en Network).
-
-### BUG-M1-003: Acceso no controlado a datos de perfil institucional mediante manipulación de UUID en URL (BOLA/IDOR)
-- **Categoría:** Backend / Seguridad API
+### BUG-M1-001: Cierre forzado de sesión (Force Logout) al acceder a la vista de Perfil de Estudiante
+- **Categoría:** Autenticación / Sesión
 - **Severidad:** **Major** | **Prioridad:** **High**
-- **Precondiciones:** Usuario autenticado con rol `ESTUDIANTE`.
+- **Precondiciones:** Sesión iniciada con rol de estudiante en `http://localhost:5173/`.
 - **Pasos para reproducir:**
-  1. Ejecutar petición GET `/api/v1/estudiante/perfil/{uuid-de-otro-estudiante}` reemplazando el UUID propio por el de un compañero.
-- **Resultado Actual:** El endpoint retorna HTTP 200 con nombres completos, CI, carrera y teléfono del estudiante ajeno.
-- **Resultado Esperado:** Backend debe contrastar el UUID del token autenticado contra el path variable y retornar HTTP 403 Forbidden.
-- **Evidencia en Video:** `BUG-M1-003-IDOR-Perfil.mp4` (Llamada en Swagger/Postman con token ajeno retornando 200).
+  1. Iniciar sesión y hacer clic en el avatar de usuario en la barra superior.
+  2. Seleccionar la opción "Perfil" (`/perfil/estudiante`).
+- **Resultado Actual:** La aplicación invoca inmediatamente `this.$keycloak.logout()` expulsando al usuario hacia el login de Keycloak tras fallar la petición de datos.
+- **Resultado Esperado:** Manejar el fallo de carga de datos mostrando un mensaje de error o vista vacía sin revocar ni destruir la sesión SSO del usuario.
+- **Evidencia en Video:** `BUG-M1-001-Forced-Logout-On-Profile..mp4` (Acceso a perfil y expulsión inmediata de sesión).
 
-### BUG-M1-004: La importación de Excel del padrón estudiantil falla con NullPointerException si una celda de carrera está en blanco
-- **Categoría:** Backend / Padrón Estudiantil
+### BUG-M1-002: Placeholder erróneo "Apellido Paterno:" e ID duplicado en el campo "Apellido Materno"
+- **Categoría:** Frontend / UI
+- **Severidad:** **Minor** | **Prioridad:** **Normal**
+- **Precondiciones:** En `/finish/register-estudiante` con sesión iniciada.
+- **Pasos para reproducir:**
+  1. Iniciar sesión y navegar al formulario de registro de estudiante (`/finish/register-estudiante`).
+  2. Inspeccionar o vaciar el campo de texto "Apellido Materno".
+  3. Observar el texto del placeholder en la caja de texto y la estructura del elemento en el DOM.
+- **Resultado Actual:** El campo de Apellido Materno muestra erróneamente el placeholder `"Apellido Paterno:"`, utiliza el identificador duplicado `id="lastname"` (idéntico al del Apellido Paterno) y `name="name"`, y la cabecera de sección está en inglés (`Personal Detail :`).
+- **Resultado Esperado:** El placeholder debe indicar `"Apellido Materno:"`, el elemento debe tener un identificador único (ej. `id="mother-lastname"`), y las etiquetas deben mantener consistencia en español.
+- **Evidencia en Video:** `BUG-M1-002-Placeholder-Apellido-Materno.mp4` (Inspección del campo en DevTools evidenciando el placeholder erróneo e ID duplicado).
+
+### BUG-M1-003: Función "Bloquear" en menú de usuario congela la interfaz sin opción de desbloqueo
+- **Categoría:** UI / Usabilidad
 - **Severidad:** **Major** | **Prioridad:** **High**
-- **Precondiciones:** Archivo `.xlsx` con 100 filas donde la fila 45 tiene la columna carrera vacía.
+- **Precondiciones:** Sesión iniciada en cualquier vista del sistema.
 - **Pasos para reproducir:**
-  1. Ingresar como Administrador a `/administrador/estudiantes/padron`.
-  2. Cargar el archivo y presionar "Importar Padrón".
-- **Resultado Actual:** Error HTTP 500 en consola (`NullPointerException: getCarrera() is null`), abortando la transacción y perdiendo las 44 filas previas válidas.
-- **Resultado Esperado:** Registro de fila inválida en la tabla `importacion_padron_error` y continuación del procesamiento para las filas válidas restantes.
-- **Evidencia en Video:** `BUG-M1-004-Padron-NullPointer.mp4` (Carga del excel y pantalla de error 500).
+  1. Desplegar el menú de usuario desde el avatar superior derecho.
+  2. Hacer clic en la opción "Bloquear".
+- **Resultado Actual:** Se despliega un overlay oscuro permanente que bloquea toda interacción con la pantalla, sin solicitar contraseña de desbloqueo, sin modal para reanudar sesión y obligando a recargar la página.
+- **Resultado Esperado:** La función debe presentar un diálogo formal solicitando contraseña o PIN para desbloquear la sesión, o ser removida si no cuenta con implementación funcional.
+- **Evidencia en Video:** `BUG-M1-003-Broken-Lock-Screen.mp4` (Clic en bloquear y pantalla completamente congelada con fondo negro).
 
-### BUG-M1-005: Formulario de completar registro permite guardar espacios en blanco en Código de Estudiante
+### BUG-M1-004: Error 404 en consola de DevTools por recursos de imágenes de avatar no encontrados
+- **Categoría:** Frontend / Consola
+- **Severidad:** **Minor** | **Prioridad:** **Normal**
+- **Precondiciones:** Abrir DevTools (`F12`) en la pestaña *Console* y *Network*.
+- **Pasos para reproducir:**
+  1. Navegar por la página principal `http://localhost:5173/` o entrar al directorio de empresas.
+  2. Inspeccionar la pestaña Network filtrando por imágenes / estado 404.
+- **Resultado Actual:** Aparecen solicitudes en rojo con código HTTP 404 buscando imágenes o avatares por defecto inexistentes.
+- **Resultado Esperado:** Disponer de una imagen SVG de avatar por defecto local (`fallback.png`) sin generar errores 404 en consola.
+- **Evidencia en Video:** `BUG-M1-004-Avatar-404-Console-Error.mp4` (Pestaña Network y Console mostrando errores 404 en rojo).
+
+### BUG-M1-005: Botón "Cancelar" en Registro de Estudiante ejecuta Logout destructivo sin confirmación
+- **Categoría:** Autenticación / Sesión / Padrón
+- **Severidad:** **Major** | **Prioridad:** **High**
+- **Precondiciones:** En formulario `/finish/register-estudiante` con sesión iniciada.
+- **Pasos para reproducir:**
+  1. Navegar a `http://localhost:5173/finish/register-estudiante`.
+  2. Hacer scroll al pie del formulario y presionar el botón rojo "Cancelar".
+- **Resultado Actual:** El botón tiene hardcodeado `@click="this.$keycloak.logout()"` en [CompletarRegistroEstudianteView.vue#L331](file:///d:/DEV/internship-qa/frontend/src/views/CompletarRegistro/CompletarRegistroEstudianteView.vue#L331). Destruye la sesión del usuario inmediatamente y lo expulsa a Keycloak perdiendo todo el avance sin confirmación.
+- **Resultado Esperado:** Debe solicitar confirmación mediante un modal de advertencia y redirigir limpiamente a la página de inicio (`/`) sin revocar la sesión institucional del usuario.
+- **Evidencia en Video:** `BUG-M1-005-Destructive-Cancel-Logout.mp4` (Clic en Cancelar y expulsión destructiva de la sesión).
+
+### BUG-M1-006: Falta de atributo max en selector de Fecha de Nacimiento permite elegir fechas futuras
 - **Categoría:** Validación / Frontend
 - **Severidad:** **Minor** | **Prioridad:** **Normal**
-- **Precondiciones:** Estudiante recién autenticado completando sus datos.
+- **Precondiciones:** En `/finish/register-estudiante` con sesión iniciada.
 - **Pasos para reproducir:**
-  1. En `/completar-registro-estudiante`, ingresar en código de estudiante solo espacios `"     "`.
-  2. Presionar "Guardar".
-- **Resultado Actual:** El formulario envía la solicitud y el backend persiste los espacios sin trim.
-- **Resultado Esperado:** Mensaje de validación: "El código de estudiante es obligatorio y no puede consistir únicamente en espacios".
-- **Evidencia en Video:** `BUG-M1-005-Trim-Validation-Code.mp4` (Grabación de ingreso de espacios y persistencia).
+  1. Abrir el formulario de registro y desplegar el selector de "Fecha de Nacimiento".
+  2. Navegar a un año y fecha futuros (ej. 2030) y seleccionarla.
+  3. Presionar "Siguiente".
+- **Resultado Actual:** El widget de calendario carece del atributo `max`, permitiendo seleccionar fechas futuras. Al enviar, la línea 1418 emite un toast informal (`toast.error("No puedes nacer en el futuro >:c payaso")`).
+- **Resultado Esperado:** El `<input type="date">` debe implementar `:max="fechaMaxima"` para inhabilitar preventivamente fechas futuras a nivel de control de interfaz.
+- **Evidencia en Video:** `BUG-M1-006-Fecha-Nacimiento-Futura-Max.mp4` (Selección de fecha futura en el datepicker por ausencia de restricción max).
 
-### BUG-M1-006: Texto de mensaje de error de padrón no autorizado contiene faltas ortográficas
-- **Categoría:** UI / Copywriting
-- **Severidad:** **Trivial** | **Prioridad:** **Low**
-- **Precondiciones:** Acceder a la vista `/no-autorizado-padron`.
-- **Pasos para reproducir:**
-  1. Visualizar el texto explicativo de la pantalla.
-- **Resultado Actual:** Dice "Consulte con la unidadd de pasantias pra verificar su matricula".
-- **Resultado Esperado:** "Consulte con la Unidad de Servicios a Estudiantes e Inserción Laboral (USEI) para regularizar su matrícula".
-- **Evidencia en Video:** `BUG-M1-006-Typo-NoAutorizado.mp4` (Resaltado del texto con faltas ortográficas).
-
-### BUG-M1-007: Fallo en parsing de caracteres especiales (tildes y eñes) en nombres de estudiantes importados de Excel
-- **Categoría:** Backend / Encoding
-- **Severidad:** **Minor** | **Prioridad:** **Normal**
-- **Precondiciones:** Padrón con nombres como "Peña", "Álvarez", "Muñoz".
-- **Pasos para reproducir:**
-  1. Importar el archivo Excel del padrón.
-  2. Buscar a "Peña" en la vista de estudiantes.
-- **Resultado Actual:** Los nombres aparecen con símbolos de codificación corruptos como `Pea` o `Ã¡lvarez`.
-- **Resultado Esperado:** Manejo estricto de codificación UTF-8 preservando tildes y caracteres especiales en la base de datos.
-- **Evidencia en Video:** `BUG-M1-007-Encoding-UTF8-Padron.mp4` (Búsqueda en la tabla mostrando caracteres rotos).
-
-### BUG-M1-008: Ausencia de debounce en búsqueda de padrón causa peticiones duplicadas innecesarias al backend
-- **Categoría:** Rendimiento / Frontend
+### BUG-M1-007: Ausencia de indicador de carga (Spinner) al presionar "Iniciar Sesión" permite clics repetidos
+- **Categoría:** UI / Usabilidad
 - **Severidad:** **Minor** | **Prioridad:** **Low**
-- **Precondiciones:** Vista `/administrador/estudiantes` abierta.
+- **Precondiciones:** En la barra superior con el botón "Iniciar Sesión".
 - **Pasos para reproducir:**
-  1. Escribir rápidamente "RODRIGUEZ" en el campo de filtro.
-  2. Inspeccionar la pestaña Network.
-- **Resultado Actual:** Se disparan 9 peticiones HTTP simultáneas (una por cada pulsación de tecla).
-- **Resultado Esperado:** Implementación de debounce de 350ms para despachar una sola petición al finalizar la escritura.
-- **Evidencia en Video:** `BUG-M1-008-Debounce-Network-Spam.mp4` (Escritura rápida y ráfaga de peticiones en DevTools).
+  1. Hacer dos clics veloces consecutivos sobre el botón "Iniciar Sesión".
+- **Resultado Actual:** El botón no muestra animación de carga ni se deshabilita, disparando múltiples llamadas redundantes hacia Keycloak.
+- **Resultado Esperado:** Deshabilitar el botón y mostrar un spinner de carga inmediato mientras se resuelve la redirección.
+- **Evidencia en Video:** `BUG-M1-007-Double-Click-Login-Spam.mp4` (Clics repetidos sobre el botón sin bloqueo visual).
 
-### BUG-M1-009: Desconexión de sesión no limpia el estado en el store de Pinia hasta refrescar manualmente
-- **Categoría:** Frontend / Estado Reactivo
-- **Severidad:** **Minor** | **Prioridad:** **Normal**
-- **Precondiciones:** Sesión activa.
+### BUG-M1-008: Pantalla en blanco total (White Screen) por falta de ruta catch-all 404 en rutas no mapeadas
+- **Categoría:** Frontend / Vue Router
+- **Severidad:** **Major** | **Prioridad:** **High**
+- **Precondiciones:** Navegador en cualquier estado en `http://localhost:5173/`.
 - **Pasos para reproducir:**
-  1. Hacer clic en "Cerrar Sesión".
-  2. Observar el avatar del usuario en la esquina superior derecha antes de recargar.
-- **Resultado Actual:** La barra superior mantiene el nombre y avatar del usuario cerrado hasta que se fuerza un F5.
-- **Resultado Esperado:** Al invocar `logout()`, el store `userStore.$reset()` debe vaciarse inmediatamente reactivando el botón "Iniciar Sesión".
-- **Evidencia en Video:** `BUG-M1-009-Pinia-Logout-Glitch.mp4` (Logout en video mostrando el avatar persistente).
+  1. Ingresar una ruta inexistente o no registrada en el router, por ejemplo: `http://localhost:5173/convocatorias`.
+  2. Presionar Enter.
+- **Resultado Actual:** Vue Router no tiene configurada una ruta comodín `/:pathMatch(.*)*`, resultando en una pantalla completamente en blanco sin barra de navegación ni mensaje informativo para el usuario.
+- **Resultado Esperado:** Renderizar una vista amigable de error 404 (Not Found) con enlace de retorno a la página de inicio.
+- **Evidencia en Video:** `BUG-M1-008-White-Screen-Direct-Route.mp4.mp4` (Ingreso a /convocatorias y pantalla blanca total).
 
-### BUG-M1-010: Excepción SQL no capturada expone estructura de tablas al registrar CI duplicado en padrón
-- **Categoría:** Backend / Manejo de Excepciones
-- **Severidad:** **Major** | **Prioridad:** **Urgent**
-- **Precondiciones:** CI `4588921` ya existente en `padron_estudiante`.
+### BUG-M1-009: Enlaces del pie de página (Términos del Servicio y Privacidad) apuntan a enlaces vacíos (#)
+- **Categoría:** UI / Enlaces Rotos
+- **Severidad:** **Trivial** | **Prioridad:** **Low**
+- **Precondiciones:** En cualquier página del sistema, hacer scroll hasta el pie de página (footer).
 - **Pasos para reproducir:**
-  1. Intentar insertar manualmente un registro con el mismo CI.
-- **Resultado Actual:** La respuesta HTTP 500 incluye el stacktrace completo de Hibernate con `ERROR: duplicate key value violates unique constraint "uk_padron_ci"`.
-- **Resultado Esperado:** `GlobalExceptionHandler` debe interceptar `DataIntegrityViolationException` y devolver HTTP 409 con mensaje limpio de negocio.
-- **Evidencia en Video:** `BUG-M1-010-StackTrace-Leak.mp4` (Payload de error en Network mostrando trazas internas).
+  1. Hacer clic en los enlaces "Términos del Servicio" o "Política de Privacidad".
+- **Resultado Actual:** El enlace tiene `href="#"`, recarga el scroll hacia arriba y no muestra ninguna política institucional.
+- **Resultado Esperado:** Abrir un modal informativo o redirigir a la página de normativas oficiales de USEI UCB.
+- **Evidencia en Video:** `BUG-M1-009-Dead-Footer-Links.mp4` (Clics en enlaces del pie de página sin efecto).
+
+### BUG-M1-010: Bloqueo de registro al no validar dominio institucional @ucb.edu.bo en formularios de estudiante
+- **Categoría:** Seguridad / Regla de Negocio
+- **Severidad:** **Block** | **Prioridad:** **Immediate**
+- **Precondiciones:** En formulario de registro o contacto estudiantil.
+- **Pasos para reproducir:**
+  1. Intentar registrar un estudiante ingresando un correo externo como `estudiante.externo@gmail.com`.
+  2. Presionar el botón de verificación o envío.
+- **Resultado Actual:** El formulario no restringe el dominio en tiempo real en el input permitiendo que la solicitud viaje al backend.
+- **Resultado Esperado:** Validación reactiva inmediata con borde rojo indicando: "Debe ingresar obligatoriamente su correo institucional @ucb.edu.bo".
+- **Evidencia en Video:** `BUG-M1-010-Invalid-Domain-Check.mp4` (Ingreso de correo gmail y falta de advertencia inmediata).
 
 ---
 
