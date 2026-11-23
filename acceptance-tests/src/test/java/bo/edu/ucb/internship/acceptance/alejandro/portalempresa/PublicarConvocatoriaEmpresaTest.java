@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 
 import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmpresaUiHelper.clickWhenReady;
-import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmpresaUiHelper.esperarOverlayDeCarga;
 import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmpresaUiHelper.irARuta;
 import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmpresaUiHelper.loginComoEmpresa;
 import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmpresaUiHelper.requiredCredential;
@@ -28,6 +27,11 @@ import static bo.edu.ucb.internship.acceptance.alejandro.portalempresa.PortalEmp
  * de cierre futura, un area, una carrera, y un requisito/funcion/beneficio via los dialogos de
  * SweetAlert) y se comprueba que la pasantia se guarda: al guardarse con exito la aplicacion
  * redirige al listado de pasantias de la empresa.
+ *
+ * Nota de diseno: los &lt;select&gt; de Area y Carrera inician con su primera opcion real ya
+ * seleccionada (el componente hace areaSelected = areas[0]) y Area puede tener una sola opcion
+ * real; por eso Select.selectByIndex no dispara el evento 'change' y el item no se agregaria.
+ * Se fuerza el 'change' por JS para que el componente agregue el area/carrera a su lista.
  *
  * Nota: la prueba CREA una pasantia real (con titulo unico por timestamp) en el entorno bajo
  * prueba. Toda la interaccion es por la UI (Chrome -> Vue -> Spring Boot).
@@ -84,13 +88,13 @@ public class PublicarConvocatoriaEmpresaTest extends BaseTest {
                 + "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
             inputFecha, fechaFutura);
 
-        // Área: seleccionar la primera opción real (índice 0 es el placeholder deshabilitado).
+        // Área: agregar la primera opción real forzando el evento 'change'.
         wait.until(d -> new Select(d.findElement(AREA_SELECT)).getOptions().size() > 2);
-        new Select(driver.findElement(AREA_SELECT)).selectByIndex(1);
+        agregarDesdeSelect(AREA_SELECT);
 
-        // Carrera: seleccionar la primera carrera real.
+        // Carrera: agregar la primera carrera real forzando el evento 'change'.
         wait.until(d -> new Select(d.findElement(CARRERA_SELECT)).getOptions().size() > 1);
-        new Select(driver.findElement(CARRERA_SELECT)).selectByIndex(1);
+        agregarDesdeSelect(CARRERA_SELECT);
 
         // Requisito, función y beneficio: se agregan por diálogos de SweetAlert.
         agregarItemConSwal(wait, BTN_REQUISITOS, "Manejo de Java y Spring Boot");
@@ -109,6 +113,19 @@ public class PublicarConvocatoriaEmpresaTest extends BaseTest {
         Assert.assertTrue(seGuardoYRedirigio,
             "Al publicar una convocatoria con datos válidos, la empresa debería guardarla y ser "
                 + "redirigida al listado de sus pasantías.");
+    }
+
+    /**
+     * Fuerza la selección de la primera opción real (índice 1; el 0 es el placeholder) y dispara
+     * el evento 'change' por JS, para que el componente Vue agregue el ítem a su lista aunque la
+     * opción ya estuviera seleccionada por defecto (Áreas puede tener una sola opción real).
+     */
+    private void agregarDesdeSelect(By selectLocator) {
+        WebElement select = driver.findElement(selectLocator);
+        ((JavascriptExecutor) driver).executeScript(
+            "var s = arguments[0]; s.selectedIndex = 1;"
+                + "s.dispatchEvent(new Event('change', { bubbles: true }));",
+            select);
     }
 
     /** Agrega un ítem mediante el diálogo de SweetAlert (Requisito / Función / Beneficio). */
