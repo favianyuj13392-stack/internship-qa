@@ -2,15 +2,15 @@ server:
   port: 8085
 minio:
   endpoint: ${MINIO_SERVER_URL:http://localhost:9000}
-  accessKey: ${MINIO_ACCESS_KEY:internship}
-  secretKey: ${MINIO_SECRET_KEY:internship2024}
+  accessKey: ${MINIO_ACCESS_KEY:minioadmin}
+  secretKey: ${MINIO_SECRET_KEY:minioadmin}
 spring:
   config:
     import: optional:file:.env[.properties]
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost:5432}/${POSTGRES_DB:internship}
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:12345678}
+    password: ${POSTGRES_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

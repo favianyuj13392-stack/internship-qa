@@ -91,6 +91,9 @@ public class AdministradorBl {
             if(usuariosInstituciones == null){
                 throw new InstitucionNotFoundException("No se encontro la relacion entre el usuario y la institucion");
             }
+            if(Boolean.TRUE.equals(usuariosInstituciones.getActivo())){
+                throw new UsuarioYaRelacionadoException("El usuario ya se encuentra relacionado con la institucion");
+            }
             if(!estado){
                 //Borrar la relacion y los datos asociados
                 Usuarios usuarios = usuariosInstituciones.getUsuariosIdusuarios();
@@ -263,7 +266,7 @@ public class AdministradorBl {
             if (usuarios == null) throw new InstitucionNotFoundException("Usuario no encontrado");
             Instituciones instituciones = institucionesDao.findById(idInstitucion).orElse(null);
             if (instituciones == null) throw new InstitucionNotFoundException("Institucion no encontrada");
-            if(usuariosinstituciones.getUsuariosIdusuarios().equals(usuarios) && usuariosinstituciones.getInstitucionesIdinstituciones().equals(instituciones)){
+            if(!usuariosinstituciones.getUsuariosIdusuarios().equals(usuarios) || !usuariosinstituciones.getInstitucionesIdinstituciones().equals(instituciones)){
                 throw new InstitucionNotFoundException("No se encontro la relacion entre el usuario y la institucion");
             }
             return new SolicitudIndormacionDto(UsuariosDto.fromEntityInstitucion(usuarios),PersonasDto.fromEntity(usuarios.getPersonasIdpersonas()),InstitucionesDto.fromEntity(instituciones),UsuariosInstitucionesDto.fromEntity(usuariosinstituciones));

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  mariadb-qa:
+    image: mariadb:10.5
+    container_name: mariadb-qa
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: testlink
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_qa_data:/var/lib/mysql
+    networks:
+      - qa-net
+    restart: always
+
+  testlink:
+    image: imtnd/testlink:latest
+    container_name: testlink-app
+    depends_on:
+      - mariadb-qa
+    ports:
+      - "8088:80"
+    volumes:
+      - testlink_data:/var/testlink
+    networks:
+      - qa-net
+    restart: always
+
+  mantisbt:
+    image: vimagick/mantisbt:latest
+    container_name: mantisbt-app
+    depends_on:
+      - mariadb-qa
+    ports:
+      - "8089:80"
+    volumes:
+      - mantisbt_data:/var/www/html
+    networks:
+      - qa-net
+    restart: always
+
+volumes:
+  mariadb_qa_data:
+  testlink_data:
+  mantisbt_data:
+
+networks:
+  qa-net:
+    driver: bridge
