@@ -1,6 +1,6 @@
 # Entregable 6 — Pautas para pruebas de aceptación ATDD
 
-**Estado:** la base de automatización está en `main`; cada integrante debe agregar sus casos. No se han implementado ni ejecutado los casos de aceptación.
+**Estado:** base común en main; cinco pruebas de Sergio implementadas localmente en atdd/sergio-administracion-usei. Falta configurar el entorno QA y ejecutar.
 **Aplicación:** Internship USEI
 **Ejemplo pedido en la consigna:** <https://github.com/gpalabral/ATDD>
 
@@ -128,30 +128,40 @@ mvn -f acceptance-tests/pom.xml test -Dapp.baseUrl=http://localhost:5173
 
 Los resultados de Maven/Surefire quedan en `acceptance-tests/target/surefire-reports/`. Este comando **no inicia la aplicación**. Si todavía no se agregaron clases con métodos `@Test`, no habrá flujos de aceptación que ejecutar.
 
-## 7. Casos propuestos para Sergio — Administración USEI
+## 7. Casos de Sergio Mendoza — Administración USEI
 
-Estos son candidatos de su Entregable 2; antes de automatizarlos, confirmar que el ID y el flujo correspondan al caso que está en TestLink:
+Se implementaron cinco pruebas de aceptación basadas en casos existentes del Entregable 2. Los datos identificables se configuran fuera del código y corresponden únicamente al entorno local de QA.
 
-| ID existente | Flujo candidato | Evidencia visible esperada |
+| Caso base | Flujo automatizado desde la interfaz | Verificación principal |
 |---|---|---|
-| `IQA-1-36` | Aprobar y publicar una pasantía desde Administración USEI | La interfaz confirma el cambio y muestra el estado publicado. |
-| `IQA-1-42` | Importar un registro válido al Padrón | La interfaz confirma la importación y permite encontrar el registro una sola vez. |
-| `IQA-1-43` | Validar un archivo de Padrón con un dato obligatorio inválido | La interfaz muestra el error y no aplica la importación inválida. |
-| `IQA-1-44` | Consultar pasantías sin aplicantes | La interfaz presenta el listado sin postulaciones asociadas. |
-| `IQA-1-45` | Verificar acceso a pantallas administrativas según el rol | La interfaz permite o restringe el acceso según el rol probado. |
+| IQA-1-36 — aprobar y publicar una pasantía | Abrir una pasantía QA pendiente y aprobarla | La interfaz confirma la aprobación y muestra la pasantía en el listado administrativo publicado. |
+| IQA-1-41 — exportar a Excel estudiantes sin primer acceso | Solicitar Exportar campaña desde el Padrón | El navegador descarga un archivo XLSX válido. |
+| IQA-1-42 — importar un registro nuevo al Padrón | Cargar un CSV único, simularlo y confirmar la importación | La interfaz confirma la importación y permite encontrar una sola vez el nuevo registro. |
+| IQA-1-43 — validar errores e impedir aplicar un Padrón inválido | Simular un archivo con una fila válida y otra sin apellidos | La interfaz muestra el error y no ofrece confirmar; la fila válida tampoco aparece en el Padrón. |
+| IQA-1-44 — consultar pasantías sin aplicantes | Abrir el listado de Administración USEI | La convocatoria QA configurada aparece enlazada a su detalle. |
 
-Estos flujos son una propuesta de selección, no una afirmación de que sus datos estén precargados. Cada prueba debe preparar o identificar sus datos QA mediante el procedimiento acordado, sin depender de información personal real.
+Trazabilidad de IQA-1-41: el caso y el botón Exportar campaña existen en el Entregable 2 y en la interfaz. La revisión de requisitos no encontró un requisito funcional explícito para la exportación; conviene que el equipo confirme o documente esa relación para fortalecer la trazabilidad académica.
+
+### Preparación, acción y resultado
+
+| ID | Preparación (Given) | Acción en la interfaz (When) | Resultado comprobable (Then / Assert) |
+|---|---|---|---|
+| IQA-1-36 | Cuenta QA ADMIN y una pasantía de prueba pendiente | Abrir Solicitudes de pasantías, seleccionar la convocatoria preparada y pulsar Aprobar | Aparece la confirmación de aprobación y la convocatoria queda visible en el listado de pasantías publicadas. |
+| IQA-1-41 | Cuenta QA ADMIN, un estudiante QA sin primer acceso y otro que ya inició sesión | Abrir Estudiantes y pulsar Exportar campaña | Se descarga estudiantes_sin_acceso_usei.xlsx; incluye el primero y excluye el segundo. |
+| IQA-1-42 | Cuenta QA ADMIN y una carrera existente configurada para QA | Cargar el archivo CSV generado por la prueba, simular la validación y confirmar la importación | La simulación indica un registro nuevo y cero errores; tras confirmar, la interfaz encuentra exactamente una fila con el correo QA único generado. |
+| IQA-1-43 | Cuenta QA ADMIN, una carrera existente y un CSV con una fila válida más otra sin apellidos | Cargar el archivo y pulsar Simular Validación | La interfaz identifica el error de Apellidos, no muestra Confirmar y, al cancelar, no encuentra la fila válida simulada. |
+| IQA-1-44 | Cuenta QA ADMIN y una convocatoria QA sin aplicantes | Abrir Pasantías sin aplicantes | La convocatoria configurada aparece en ese listado y tiene un enlace a su detalle administrativo. |
+
+IQA-1-36 cambia el estado de la convocatoria QA. IQA-1-42 agrega una fila de padrón con correo único generado para esa ejecución; el correo se imprime en la salida para facilitar su limpieza. Preparar o restaurar esos datos entre ejecuciones. No usar convocatorias ni datos personales reales.
 
 ## 8. Reparto y trazabilidad del equipo
 
-Completar una fila por integrante. Los cinco casos representativos del equipo se eligen de Entregable 2; cada persona automatiza hasta cinco casos de su propio módulo.
+Completar una fila por integrante. Los cinco casos representativos del equipo se eligen del Entregable 2; cada persona automatiza hasta cinco casos de su propio módulo.
 
 | Integrante | Módulo | IDs de Entregable 2 elegidos | Cantidad automatizada |
 |---|---|---|---:|
-| Sergio Mendoza | Administración USEI | `IQA-1-36`, `IQA-1-42`, `IQA-1-43`, `IQA-1-44`, `IQA-1-45` (propuesta) | Hasta 5 |
+| Sergio Mendoza | Administración USEI | IQA-1-36, IQA-1-41, IQA-1-42, IQA-1-43, IQA-1-44 | 5 |
 | Añadir integrante | Añadir módulo | Añadir IDs existentes | Hasta 5 |
-
-Cada clase o método debe permitir identificar rápidamente el ID de TestLink que cubre. No crear un segundo caso manual en TestLink para representar el mismo requisito.
 
 ## 9. Ramas, cambios y criterios de entrega
 
